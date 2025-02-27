@@ -16,14 +16,14 @@ const k = kaplay({
 k.scene('game', () => {
   k.add([
     k.rect(k.width(), 16),
-    k.pos(0, k.height() - 16),
+    k.pos(0, 0),
+    k.anchor('bot'),
     k.area(),
     k.body({ isStatic: true }),
   ]);
   k.add([
     k.rect(k.width(), 16),
-    k.anchor('bot'),
-    k.pos(0, 0),
+    k.pos(0, k.height() - 16),
     k.area(),
     k.body({ isStatic: true }),
     k.color(127, 200, 255),
