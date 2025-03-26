@@ -1,4 +1,4 @@
-import "./styles.css";
+import './styles.css';
 import kaplay from 'kaplay';
 
 const k = kaplay({
@@ -9,6 +9,7 @@ const k = kaplay({
   buttons: {
     jump: {
       keyboard: ['space'],
+      mouse: ['left'],
     },
   },
 });
