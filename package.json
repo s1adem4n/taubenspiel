@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "kaplay": "^3001.0.9"
+    "kaplay": "^4000.0.0-alpha.17"
   },
   "devDependencies": {
     "typescript": "~5.7.2",

@@ -9,56 +9,73 @@ const k = kaplay({
   buttons: {
     jump: {
       keyboard: ['space'],
-      mouse: ['left'],
+    },
+    throw: {
+      keyboard: ['enter'],
     },
   },
 });
 
+let leftTouchId = -1;
+let rightTouchId = -1;
+window.addEventListener('touchstart', (e) => {
+  for (const touch of e.touches) {
+    k.debug.log('touchstart', touch.identifier);
+    if (touch.clientX < window.innerWidth / 2 && leftTouchId === -1) {
+      leftTouchId = touch.identifier;
+      k.pressButton('jump');
+    }
+    if (touch.clientX >= window.innerWidth / 2 && rightTouchId === -1) {
+      rightTouchId = touch.identifier;
+      k.pressButton('throw');
+    }
+  }
+});
+window.addEventListener('touchcancel', (e) => {
+  for (const touch of e.touches) {
+    k.debug.log('touchend', touch.identifier);
+    if (touch.identifier === leftTouchId) {
+      leftTouchId = -1;
+      k.releaseButton('jump');
+    }
+    if (touch.identifier === rightTouchId) {
+      rightTouchId = -1;
+      k.releaseButton('throw');
+    }
+  }
+});
+
 k.scene('game', () => {
-  let PIPE_OPEN = 80;
-  const PIPE_MIN = 40;
-  let SPEED = 150;
+  let SPEED = 60;
   let score = 0;
 
-  function spawnPipe() {
+  function spawnHoop() {
     score += 1;
-    const topHeight = k.rand(PIPE_MIN, PIPE_OPEN - PIPE_MIN);
-    const bottomHeight = k.height() - PIPE_OPEN - topHeight;
 
-    k.add([
-      k.pos(k.width(), 0),
-      k.rect(64, topHeight),
+    const x = k.width();
+    const y = Math.min(k.rand(0, 1) * k.height(), k.height() - 64);
+    const hoop = k.add([
+      k.pos(x, y),
+      k.rect(32, 10),
       k.color(0, 127, 255),
       k.area(),
+      k.body({ isStatic: true }),
       k.move(k.LEFT, SPEED),
       k.offscreen({ destroy: true }),
-      'pipe',
+      'hoop',
     ]);
-    k.add([
-      k.pos(k.width(), topHeight + PIPE_OPEN),
-      k.rect(64, bottomHeight),
-      k.color(0, 127, 255),
+    hoop.add([
+      k.pos(4, 0),
+      k.rect(24, 8),
+      k.color(255, 0, 0),
       k.area(),
-      k.move(k.LEFT, SPEED),
       k.offscreen({ destroy: true }),
-      'pipe',
-    ]);
-    k.add([
-      k.text(score.toString()),
-      k.pos(k.width() + 30, k.height() - 20),
-      k.anchor('center'),
-      k.color(255, 255, 255),
-      k.move(k.LEFT, SPEED),
-      k.offscreen({ destroy: true }),
+      'hoopOpen',
     ]);
   }
 
-  k.loop(1, () => {
-    spawnPipe();
-    if (PIPE_OPEN > PIPE_MIN) {
-      PIPE_OPEN -= 1;
-      SPEED += 5;
-    }
+  k.loop(3, () => {
+    spawnHoop();
   });
 
   k.add([
@@ -71,26 +88,77 @@ k.scene('game', () => {
 
   k.setGravity(400);
 
-  const player = k.add([k.rect(20, 20), k.pos(100, 100), k.area(), k.body()]);
+  const player = k.add([
+    k.rect(20, 10),
+    k.pos(20, 100),
+    k.area(),
+    k.body(),
+    k.rotate(0),
+  ]);
 
-  player.onCollide('pipe', () => {
-    k.go('gameOver');
-  });
-
+  let jumpHeld = false;
   player.onUpdate(() => {
     if (player.pos.y <= 0) {
       k.go('gameOver');
     }
+    if (!jumpHeld) {
+      player.angle = k.lerp(player.angle, 0, 0.08);
+    }
+  });
+
+  let timeThrowHeld = 0;
+  function spawnPackage() {
+    const p = k.add([
+      k.rect(10, 10),
+      k.color(255, 0, 0),
+      k.pos(player.pos.x + 20, player.pos.y - 10),
+      k.body(),
+      k.area(),
+      k.offscreen({ destroy: true }),
+      'package',
+    ]);
+    const radians = k.deg2rad(player.angle);
+    const intensity = timeThrowHeld * 100 + 200;
+    const impulseX = Math.cos(radians);
+    const impulseY = Math.sin(radians);
+    p.applyImpulse(k.vec2(impulseX, impulseY).scale(intensity));
+
+    p.onCollide('hoopOpen', (h) => {
+      h.parent!.destroy();
+      p.destroy();
+    });
+  }
+
+  const intensityText = k.add([
+    k.text('0', { size: 16 }),
+    k.color(255, 255, 255),
+    k.pos(4, 4),
+  ]);
+
+  k.onButtonRelease('throw', () => {
+    spawnPackage();
+    timeThrowHeld = 0;
+    intensityText.text = '0';
+  });
+
+  k.onButtonDown('throw', () => {
+    timeThrowHeld += k.dt();
+    intensityText.text = Math.floor(timeThrowHeld * 100).toString();
   });
 
   k.onButtonDown('jump', () => {
     player.jump(100);
+    jumpHeld = true;
+    player.angle = k.lerp(player.angle, -90, 0.025);
+  });
+  k.onButtonRelease('jump', () => {
+    jumpHeld = false;
   });
 });
 
 k.scene('gameOver', () => {
   k.add([
-    k.text('Du bist vol kage hahah'),
+    k.text('verloren o_o'),
     k.color(255, 0, 0),
     k.pos(k.width() / 2, k.height() / 2),
     k.anchor('center'),
