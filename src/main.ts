@@ -18,30 +18,22 @@ const k = kaplay({
 
 let leftTouchId = -1;
 let rightTouchId = -1;
-window.addEventListener('touchstart', (e) => {
-  for (const touch of e.touches) {
-    k.debug.log('touchstart', touch.identifier);
-    if (touch.clientX < window.innerWidth / 2 && leftTouchId === -1) {
-      leftTouchId = touch.identifier;
-      k.pressButton('jump');
-    }
-    if (touch.clientX >= window.innerWidth / 2 && rightTouchId === -1) {
-      rightTouchId = touch.identifier;
-      k.pressButton('throw');
-    }
+window.addEventListener('pointerdown', (e) => {
+  if (e.clientX < window.innerWidth / 2) {
+    leftTouchId = e.pointerId;
+    k.pressButton('jump');
+  } else {
+    rightTouchId = e.pointerId;
+    k.pressButton('throw');
   }
 });
-window.addEventListener('touchcancel', (e) => {
-  for (const touch of e.touches) {
-    k.debug.log('touchend', touch.identifier);
-    if (touch.identifier === leftTouchId) {
-      leftTouchId = -1;
-      k.releaseButton('jump');
-    }
-    if (touch.identifier === rightTouchId) {
-      rightTouchId = -1;
-      k.releaseButton('throw');
-    }
+window.addEventListener('pointerup', (e) => {
+  if (e.pointerId === leftTouchId) {
+    leftTouchId = -1;
+    k.releaseButton('jump');
+  } else if (e.pointerId === rightTouchId) {
+    rightTouchId = -1;
+    k.releaseButton('throw');
   }
 });
 
@@ -65,11 +57,10 @@ k.scene('game', () => {
       'hoop',
     ]);
     hoop.add([
-      k.pos(4, 0),
+      k.pos(4, -1),
       k.rect(24, 8),
       k.color(255, 0, 0),
       k.area(),
-      k.offscreen({ destroy: true }),
       'hoopOpen',
     ]);
   }
@@ -102,7 +93,7 @@ k.scene('game', () => {
       k.go('gameOver');
     }
     if (!jumpHeld) {
-      player.angle = k.lerp(player.angle, 0, 0.08);
+      player.angle = k.lerp(player.angle, 0, 3 * k.dt());
     }
   });
 
@@ -111,7 +102,7 @@ k.scene('game', () => {
     const p = k.add([
       k.rect(10, 10),
       k.color(255, 0, 0),
-      k.pos(player.pos.x + 20, player.pos.y - 10),
+      k.pos(player.pos.x + 20, player.pos.y - 20),
       k.body(),
       k.area(),
       k.offscreen({ destroy: true }),
@@ -149,7 +140,7 @@ k.scene('game', () => {
   k.onButtonDown('jump', () => {
     player.jump(100);
     jumpHeld = true;
-    player.angle = k.lerp(player.angle, -90, 0.025);
+    player.angle = k.lerp(player.angle, -90, 5 * k.dt());
   });
   k.onButtonRelease('jump', () => {
     jumpHeld = false;
