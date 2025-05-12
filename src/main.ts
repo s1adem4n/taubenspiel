@@ -1,6 +1,5 @@
 import './styles.css';
 import briefos from './Briefos.png';
-import briefosInfo from './Briefos.json';
 import kaplay from 'kaplay';
 
 const k = kaplay({
