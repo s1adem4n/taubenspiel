@@ -1,4 +1,6 @@
 import './styles.css';
+import briefos from './Briefos.png';
+import briefosInfo from './Briefos.json';
 import kaplay from 'kaplay';
 
 const k = kaplay({
@@ -13,6 +15,13 @@ const k = kaplay({
     throw: {
       keyboard: ['enter'],
     },
+  },
+});
+k.loadSprite('briefos', briefos, {
+  sliceX: 4,
+  sliceY: 1,
+  anims: {
+    fly: { from: 0, to: 3, loop: true },
   },
 });
 
@@ -38,12 +47,16 @@ window.addEventListener('pointerup', (e) => {
 });
 
 k.scene('game', () => {
-  let SPEED = 60;
-  let score = 0;
+  let timeMultiplier = 1;
+  let speed = 60;
+  let gravity = 400;
+  const numTrajectoryPoints = 20;
+  const trajectorySpacing = 0.05; // Time spacing between points
+  const intensity = 250; // Initial velocity intensity
+  const packageOffsetDistance = 40;
+  k.setGravity(gravity * timeMultiplier);
 
   function spawnHoop() {
-    score += 1;
-
     const x = k.width();
     const y = Math.min(k.rand(0, 1) * k.height(), k.height() - 64);
     const hoop = k.add([
@@ -52,10 +65,12 @@ k.scene('game', () => {
       k.color(0, 127, 255),
       k.area(),
       k.body({ isStatic: true }),
-      k.move(k.LEFT, SPEED),
       k.offscreen({ destroy: true }),
       'hoop',
     ]);
+    hoop.onUpdate(() => {
+      hoop.move(-speed * timeMultiplier, 0);
+    });
     hoop.add([
       k.pos(4, -1),
       k.rect(24, 8),
@@ -64,11 +79,37 @@ k.scene('game', () => {
       'hoopOpen',
     ]);
   }
-
   k.loop(3, () => {
     spawnHoop();
   });
 
+  function spawnPackage() {
+    const radians = k.deg2rad(player.angle);
+    const startPos = k.vec2(
+      player.pos.x + Math.cos(radians) * packageOffsetDistance,
+      player.pos.y + Math.sin(radians) * packageOffsetDistance
+    );
+    const p = k.add([
+      k.rect(10, 10),
+      k.color(255, 0, 0),
+      k.pos(startPos.x, startPos.y),
+      k.body(),
+      k.area(),
+      k.offscreen({ destroy: true }),
+      'package',
+    ]);
+    const impulseX = Math.cos(radians);
+    const impulseY = Math.sin(radians);
+    p.applyImpulse(k.vec2(impulseX, impulseY).scale(intensity));
+
+    p.onCollide('hoopOpen', (h) => {
+      k.addKaboom(h.parent!.pos.add(20, 0), { scale: 0.25 });
+      h.parent!.destroy();
+      p.destroy();
+    });
+  }
+
+  // ground
   k.add([
     k.rect(k.width(), 16),
     k.pos(0, k.height() - 16),
@@ -77,73 +118,81 @@ k.scene('game', () => {
     k.color(127, 200, 255),
   ]);
 
-  k.setGravity(400);
-
+  let throwHeld = false;
   const player = k.add([
-    k.rect(20, 10),
+    k.sprite('briefos'),
     k.pos(20, 100),
     k.area(),
     k.body(),
     k.rotate(0),
   ]);
+  player.play('fly');
 
-  let jumpHeld = false;
   player.onUpdate(() => {
-    if (player.pos.y <= 0) {
-      k.go('gameOver');
+    if (!throwHeld) {
+      player.angle = k.lerp(player.angle, 0, 3 * k.dt() * timeMultiplier);
     }
-    if (!jumpHeld) {
-      player.angle = k.lerp(player.angle, 0, 3 * k.dt());
+  });
+  player.onButtonDown('jump', () => {
+    if (!throwHeld) {
+      player.jump(100 * timeMultiplier);
     }
   });
 
-  let timeThrowHeld = 0;
-  function spawnPackage() {
-    const p = k.add([
-      k.rect(10, 10),
-      k.color(255, 0, 0),
-      k.pos(player.pos.x + 20, player.pos.y - 20),
-      k.body(),
-      k.area(),
-      k.offscreen({ destroy: true }),
-      'package',
-    ]);
+  // Create the trajectory container
+  const trajectoryContainer = k.add([k.pos(0, 0)]);
+
+  player.onButtonDown('throw', () => {
+    throwHeld = true;
+    timeMultiplier = 0.5;
+
+    trajectoryContainer.removeAll();
+
+    // Calculate startPos based on player position and angle
     const radians = k.deg2rad(player.angle);
-    const intensity = timeThrowHeld * 100 + 200;
+    const startPos = k.vec2(
+      player.pos.x + Math.cos(radians) * packageOffsetDistance,
+      player.pos.y + Math.sin(radians) * packageOffsetDistance
+    );
     const impulseX = Math.cos(radians);
     const impulseY = Math.sin(radians);
-    p.applyImpulse(k.vec2(impulseX, impulseY).scale(intensity));
+    const velocity = k.vec2(impulseX, impulseY).scale(intensity * 0.75);
 
-    p.onCollide('hoopOpen', (h) => {
-      h.parent!.destroy();
-      p.destroy();
-    });
-  }
+    for (let i = 0; i < numTrajectoryPoints; i++) {
+      const t = i * trajectorySpacing;
+      const gravity = k.vec2(0, 400 * timeMultiplier);
 
-  const intensityText = k.add([
-    k.text('0', { size: 16 }),
-    k.color(255, 255, 255),
-    k.pos(4, 4),
-  ]);
+      // Position formula (uniform acceleration): p = p₀ + v₀t + ½at²
+      const x = startPos.x + velocity.x * t;
+      const y = startPos.y + velocity.y * t + 0.5 * gravity.y * t * t;
 
-  k.onButtonRelease('throw', () => {
+      // Add trajectory point
+      trajectoryContainer.add([
+        k.pos(x, y),
+        k.circle(2),
+        k.color(255, 0, 0),
+        k.anchor('center'),
+      ]);
+    }
+
+    k.setGravity(0);
+    let targetAngel = -90;
+    player.angle = k.lerp(
+      player.angle,
+      targetAngel,
+      2 * k.dt() * timeMultiplier
+    );
+    player.vel.y = 10;
+  });
+
+  player.onButtonRelease('throw', () => {
+    throwHeld = false;
+    timeMultiplier = 1;
+
     spawnPackage();
-    timeThrowHeld = 0;
-    intensityText.text = '0';
-  });
-
-  k.onButtonDown('throw', () => {
-    timeThrowHeld += k.dt();
-    intensityText.text = Math.floor(timeThrowHeld * 100).toString();
-  });
-
-  k.onButtonDown('jump', () => {
-    player.jump(100);
-    jumpHeld = true;
-    player.angle = k.lerp(player.angle, -90, 5 * k.dt());
-  });
-  k.onButtonRelease('jump', () => {
-    jumpHeld = false;
+    trajectoryContainer.removeAll();
+    k.setGravity(gravity * timeMultiplier);
+    player.angle = k.lerp(player.angle, 0, 3 * k.dt() * timeMultiplier);
   });
 });
 
