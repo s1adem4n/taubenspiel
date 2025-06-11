@@ -1,6 +1,7 @@
 import './styles.css';
 import briefos from './Briefos.png';
-import kaplay from 'kaplay';
+import prompts from './prompts.png';
+import kaplay, { GameObj, OpacityComp } from 'kaplay';
 
 const k = kaplay({
   width: 320,
@@ -22,6 +23,10 @@ k.loadSprite('briefos', briefos, {
   anims: {
     fly: { from: 0, to: 3, loop: true },
   },
+});
+k.loadSprite('prompts', prompts, {
+  sliceX: 34,
+  sliceY: 24,
 });
 
 let leftTouchId = -1;
@@ -45,6 +50,72 @@ window.addEventListener('pointerup', (e) => {
   }
 });
 
+function pulse(start: number, end: number, speed: number) {
+  return {
+    update(this: GameObj<OpacityComp>) {
+      const t = (k.time() * speed) % 1;
+      const opacity = k.lerp(start, end, Math.abs(Math.sin(t * Math.PI)));
+      this.opacity = opacity;
+    },
+  };
+}
+
+k.scene('start', () => {
+  k.onClick(() => {
+    k.go('game');
+  });
+
+  const left = k.add([
+    k.pos(8, k.height() / 2 - 8),
+    k.anchor('topleft'),
+    k.rect(k.width() * 0.4, k.height() / 2, { radius: 8 }),
+    k.color(0, 0, 0),
+    k.opacity(),
+    pulse(0.3, 0.5, 0.5),
+  ]);
+  left.add([
+    k.pos((k.width() * 0.4) / 2, 16),
+    k.text('Fliegen', {
+      size: 18,
+    }),
+    k.anchor('center'),
+  ]);
+  left.add([
+    k.pos((k.width() * 0.4) / 2, 50),
+    k.sprite('prompts', {
+      frame: 579,
+      width: 24,
+      height: 24,
+    }),
+    k.anchor('center'),
+  ]);
+
+  const right = k.add([
+    k.pos(k.width() / 2 + 24, k.height() / 2 - 8),
+    k.anchor('topleft'),
+    k.rect(k.width() * 0.4, k.height() / 2, { radius: 8 }),
+    k.color(0, 0, 0),
+    k.opacity(),
+    pulse(0.3, 0.5, 0.5),
+  ]);
+  right.add([
+    k.pos((k.width() * 0.4) / 2, 16),
+    k.text('Liefern', {
+      size: 18,
+    }),
+    k.anchor('center'),
+  ]);
+  right.add([
+    k.pos((k.width() * 0.4) / 2, 50),
+    k.sprite('prompts', {
+      frame: 579,
+      width: 24,
+      height: 24,
+    }),
+    k.anchor('center'),
+  ]);
+});
+
 k.scene('game', () => {
   let timeMultiplier = 1;
   let speed = 60;
@@ -52,7 +123,7 @@ k.scene('game', () => {
   const numTrajectoryPoints = 20;
   const trajectorySpacing = 0.05; // Time spacing between points
   const intensity = 250; // Initial velocity intensity
-  const packageOffsetDistance = 40;
+  const packageOffsetDistance = 35;
   k.setGravity(gravity * timeMultiplier);
 
   function spawnHoop() {
@@ -106,10 +177,14 @@ k.scene('game', () => {
       h.parent!.destroy();
       p.destroy();
     });
+    p.onCollide('ground', () => {
+      k.go('gameOver');
+    });
   }
 
   // ground
   k.add([
+    'ground',
     k.rect(k.width(), 16),
     k.pos(0, k.height() - 16),
     k.area(),
@@ -203,11 +278,8 @@ k.scene('gameOver', () => {
     k.anchor('center'),
   ]);
   k.onClick(() => {
-    k.go('game');
-  });
-  k.onButtonDown('jump', () => {
-    k.go('game');
+    k.go('start');
   });
 });
 
-k.go('game');
+k.go('start');
