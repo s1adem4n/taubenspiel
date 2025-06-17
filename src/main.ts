@@ -267,7 +267,7 @@ k.scene('game', () => {
     });
     p.onCollide('ground', () => {
       if (!p.healthRemoved) {
-        hearts.health--;
+        player.hp--;
         p.healthRemoved = true;
       }
       p.vel.x = 0;
@@ -285,55 +285,24 @@ k.scene('game', () => {
     k.color(127, 200, 255),
   ]);
 
-  // hearts
-  const hearts = k.add([
-    k.pos(8, 8),
-    k.anchor('topleft'),
-    k.layer('ui'),
-    {
-      maxHealth: 3,
-      health: 3,
-      healthOnScreen: 0,
-      gap: 2,
-    },
-  ]);
-  k.onUpdate(() => {
-    if (hearts.health <= 0) {
-      k.go('gameOver');
-    }
-
-    if (hearts.healthOnScreen !== hearts.health) {
-      hearts.removeAll();
-      hearts.healthOnScreen = 0;
-      for (let i = 0; i < hearts.maxHealth; i++) {
-        const heart = hearts.add([
-          k.sprite('heartBorder'),
-          k.pos(i * (16 + hearts.gap), 0),
-          k.anchor('topleft'),
-          k.opacity(),
-        ]);
-        heart.add([
-          k.sprite('heartBackground'),
-          k.pos(0, 0),
-          k.anchor('topleft'),
-        ]);
-        if (i < hearts.health) {
-          heart.add([k.sprite('heart'), k.pos(0, 0), k.anchor('topleft')]);
-        }
-      }
-      hearts.healthOnScreen = hearts.health;
-    }
-  });
-
   let throwHeld = false;
   const player = k.add([
     k.sprite('briefos'),
-    k.pos(20, 100),
+    k.pos(20, 50),
     k.area(),
     k.body(),
+    k.health(3),
     k.rotate(0),
   ]);
   player.play('fly');
+
+  player.onCollide('ground', () => {
+    player.hp = 0;
+  });
+
+  player.onDeath(() => {
+    k.go('gameOver');
+  });
 
   player.onUpdate(() => {
     if (!throwHeld) {
@@ -409,6 +378,42 @@ k.scene('game', () => {
     k.setGravity(gravity * timeMultiplier);
     player.angle = k.lerp(player.angle, 0, 3 * k.dt() * timeMultiplier);
     spawnPackage();
+  });
+
+  const hearts = k.add([
+    k.pos(8, 8),
+    k.anchor('topleft'),
+    k.layer('ui'),
+    {
+      gap: 2,
+    },
+  ]);
+  updateHearts();
+  function updateHearts() {
+    hearts.removeAll();
+    for (let i = 0; i < player.maxHP; i++) {
+      const heart = hearts.add([
+        k.sprite('heartBorder'),
+        k.pos(i * (16 + hearts.gap), 0),
+        k.anchor('topleft'),
+        k.opacity(),
+      ]);
+      heart.add([
+        k.sprite('heartBackground'),
+        k.pos(0, 0),
+        k.anchor('topleft'),
+      ]);
+      if (i < player.hp) {
+        heart.add([k.sprite('heart'), k.pos(0, 0), k.anchor('topleft')]);
+      }
+    }
+  }
+
+  player.onHurt(() => {
+    updateHearts();
+  });
+  player.onHeal(() => {
+    updateHearts();
   });
 });
 
