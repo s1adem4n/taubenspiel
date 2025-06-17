@@ -4,7 +4,7 @@
     "": {
       "name": "taubenspiel",
       "dependencies": {
-        "kaplay": "^4000.0.0-alpha.17",
+        "kaplay": "^4000.0.0-alpha.19",
       },
       "devDependencies": {
         "typescript": "~5.8.3",
@@ -109,7 +109,7 @@
 
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
-    "kaplay": ["kaplay@4000.0.0-alpha.17", "", {}, "sha512-x7BEaFkGP78ShkPVMQaQ68n1ql/W/AavC4kyr3d1YofqOWyw42YMa7okBDzSBgx8GabV7XK2brA68UfUMQSwNQ=="],
+    "kaplay": ["kaplay@4000.0.0-alpha.20", "", {}, "sha512-aK1jlGdzYeFvakx+BKdQZ4vGZhLQujU/3sWJX+ZrJP893wLkFbgZezavKJRGQ7ystkrFpyCWoPNWn3Kj8nKfng=="],
 
     "nanoid": ["nanoid@3.3.11", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w=="],
 

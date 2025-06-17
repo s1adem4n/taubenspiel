@@ -1,6 +1,9 @@
 import './styles.css';
-import briefos from './Briefos.png';
-import prompts from './prompts.png';
+import briefos from './assets/player/briefos.png';
+import prompts from './assets/prompts.png';
+import heartBorder from './assets/heart/border.png';
+import heart from './assets/heart/heart.png';
+import heartBackground from './assets/heart/background.png';
 import kaplay, { GameObj, OpacityComp } from 'kaplay';
 
 const k = kaplay({
@@ -28,6 +31,11 @@ k.loadSprite('prompts', prompts, {
   sliceX: 34,
   sliceY: 24,
 });
+k.loadSprite('heartBorder', heartBorder);
+k.loadSprite('heart', heart);
+k.loadSprite('heartBackground', heartBackground);
+
+k.setLayers(['bg', 'obj', 'ui'], 'obj');
 
 let leftTouchId = -1;
 let rightTouchId = -1;
@@ -60,40 +68,82 @@ function pulse(start: number, end: number, speed: number) {
   };
 }
 
+let firstThrowCancel = false;
+
 k.scene('start', () => {
-  k.onClick(() => {
+  k.onButtonPress('jump', () => {
     k.go('game');
   });
+  k.onButtonPress('throw', () => {
+    k.go('game');
+    firstThrowCancel = true;
+  });
 
+  const background = k.add([
+    k.rect(k.width(), k.height()),
+    k.color(40, 50, 188),
+    k.opacity(),
+    k.pos(0, 0),
+  ]);
+
+  const boxWidth = k.width() * 0.4;
+  const boxHeight = k.height() / 2;
   const left = k.add([
     k.pos(8, k.height() / 2 - 8),
     k.anchor('topleft'),
-    k.rect(k.width() * 0.4, k.height() / 2, { radius: 8 }),
+    k.rect(boxWidth, boxHeight, { radius: 8 }),
     k.color(0, 0, 0),
     k.opacity(),
     pulse(0.3, 0.5, 0.5),
   ]);
   left.add([
-    k.pos((k.width() * 0.4) / 2, 16),
+    k.pos(k.width() * 0.2, 16),
     k.text('Fliegen', {
       size: 18,
     }),
     k.anchor('center'),
   ]);
   left.add([
-    k.pos((k.width() * 0.4) / 2, 50),
+    k.pos(left.width - 40, 45),
     k.sprite('prompts', {
       frame: 579,
-      width: 24,
-      height: 24,
+      width: 28,
+      height: 28,
     }),
-    k.anchor('center'),
+  ]);
+
+  // space bar
+  const spaceBarPos = k.vec2(10, 47);
+  const spaceBarSize = 20;
+  left.add([
+    k.pos(spaceBarPos.x, spaceBarPos.y),
+    k.sprite('prompts', {
+      frame: 235,
+      width: spaceBarSize,
+      height: spaceBarSize,
+    }),
+  ]);
+  left.add([
+    k.pos(spaceBarPos.x + spaceBarSize, spaceBarPos.y),
+    k.sprite('prompts', {
+      frame: 236,
+      width: spaceBarSize,
+      height: spaceBarSize,
+    }),
+  ]);
+  left.add([
+    k.pos(spaceBarPos.x + spaceBarSize * 2, spaceBarPos.y),
+    k.sprite('prompts', {
+      frame: 237,
+      width: spaceBarSize,
+      height: spaceBarSize,
+    }),
   ]);
 
   const right = k.add([
     k.pos(k.width() / 2 + 24, k.height() / 2 - 8),
     k.anchor('topleft'),
-    k.rect(k.width() * 0.4, k.height() / 2, { radius: 8 }),
+    k.rect(boxWidth, boxHeight, { radius: 8 }),
     k.color(0, 0, 0),
     k.opacity(),
     pulse(0.3, 0.5, 0.5),
@@ -106,13 +156,48 @@ k.scene('start', () => {
     k.anchor('center'),
   ]);
   right.add([
-    k.pos((k.width() * 0.4) / 2, 50),
+    k.pos(right.width - 40, 45),
     k.sprite('prompts', {
       frame: 579,
-      width: 24,
-      height: 24,
+      width: 28,
+      height: 28,
     }),
-    k.anchor('center'),
+  ]);
+
+  // enter key
+  const enterKeyPos = k.vec2(15, 35);
+  const enterSize = 22;
+  right.add([
+    k.pos(enterKeyPos.x, enterKeyPos.y),
+    k.sprite('prompts', {
+      frame: 100,
+      width: enterSize,
+      height: enterSize,
+    }),
+  ]);
+  right.add([
+    k.pos(enterKeyPos.x + enterSize, enterKeyPos.y),
+    k.sprite('prompts', {
+      frame: 101,
+      width: enterSize,
+      height: enterSize,
+    }),
+  ]);
+  right.add([
+    k.pos(enterKeyPos.x, enterKeyPos.y + enterSize),
+    k.sprite('prompts', {
+      frame: 134,
+      width: enterSize,
+      height: enterSize,
+    }),
+  ]);
+  right.add([
+    k.pos(enterKeyPos.x + enterSize, enterKeyPos.y + enterSize),
+    k.sprite('prompts', {
+      frame: 135,
+      width: enterSize,
+      height: enterSize,
+    }),
   ]);
 });
 
@@ -167,6 +252,9 @@ k.scene('game', () => {
       k.area(),
       k.offscreen({ destroy: true }),
       'package',
+      {
+        healthRemoved: false,
+      },
     ]);
     const impulseX = Math.cos(radians);
     const impulseY = Math.sin(radians);
@@ -178,7 +266,12 @@ k.scene('game', () => {
       p.destroy();
     });
     p.onCollide('ground', () => {
-      k.go('gameOver');
+      if (!p.healthRemoved) {
+        hearts.health--;
+        p.healthRemoved = true;
+      }
+      p.vel.x = 0;
+      p.vel.y = 0;
     });
   }
 
@@ -191,6 +284,46 @@ k.scene('game', () => {
     k.body({ isStatic: true }),
     k.color(127, 200, 255),
   ]);
+
+  // hearts
+  const hearts = k.add([
+    k.pos(8, 8),
+    k.anchor('topleft'),
+    k.layer('ui'),
+    {
+      maxHealth: 3,
+      health: 3,
+      healthOnScreen: 0,
+      gap: 2,
+    },
+  ]);
+  k.onUpdate(() => {
+    if (hearts.health <= 0) {
+      k.go('gameOver');
+    }
+
+    if (hearts.healthOnScreen !== hearts.health) {
+      hearts.removeAll();
+      hearts.healthOnScreen = 0;
+      for (let i = 0; i < hearts.maxHealth; i++) {
+        const heart = hearts.add([
+          k.sprite('heartBorder'),
+          k.pos(i * (16 + hearts.gap), 0),
+          k.anchor('topleft'),
+          k.opacity(),
+        ]);
+        heart.add([
+          k.sprite('heartBackground'),
+          k.pos(0, 0),
+          k.anchor('topleft'),
+        ]);
+        if (i < hearts.health) {
+          heart.add([k.sprite('heart'), k.pos(0, 0), k.anchor('topleft')]);
+        }
+      }
+      hearts.healthOnScreen = hearts.health;
+    }
+  });
 
   let throwHeld = false;
   const player = k.add([
@@ -217,6 +350,10 @@ k.scene('game', () => {
   const trajectoryContainer = k.add([k.pos(0, 0)]);
 
   player.onButtonDown('throw', () => {
+    if (firstThrowCancel) {
+      return;
+    }
+
     throwHeld = true;
     timeMultiplier = 0.5;
 
@@ -260,13 +397,18 @@ k.scene('game', () => {
   });
 
   player.onButtonRelease('throw', () => {
+    if (firstThrowCancel) {
+      firstThrowCancel = false;
+      return;
+    }
+
     throwHeld = false;
     timeMultiplier = 1;
 
-    spawnPackage();
     trajectoryContainer.removeAll();
     k.setGravity(gravity * timeMultiplier);
     player.angle = k.lerp(player.angle, 0, 3 * k.dt() * timeMultiplier);
+    spawnPackage();
   });
 });
 
@@ -277,7 +419,10 @@ k.scene('gameOver', () => {
     k.pos(k.width() / 2, k.height() / 2),
     k.anchor('center'),
   ]);
-  k.onClick(() => {
+  k.onButtonPress('jump', () => {
+    k.go('start');
+  });
+  k.onButtonPress('throw', () => {
     k.go('start');
   });
 });
