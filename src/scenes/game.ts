@@ -26,9 +26,6 @@ function spawnHoop() {
     'hoopOpen',
   ]);
 }
-k.loop(3, () => {
-  spawnHoop();
-});
 
 function spawnPackage(player: GameObj<PosComp & RotateComp & HealthComp>) {
   const radians = k.deg2rad(player.angle);
@@ -87,6 +84,10 @@ export default function game() {
       state.timeMultiplier * state.baseTime,
       3 * k.dt()
     );
+  });
+
+  k.loop(3, () => {
+    spawnHoop();
   });
 
   // ground
