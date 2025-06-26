@@ -3,3 +3,6 @@ troete.mp3: salamisound.de
 bg.png: Modern City Background Art, craftpix.net
 chippie.mp3: Chippie von Jakim (https://modarchive.org/index.php?request=view_by_moduleid&query=161201)
 houses/*: City Street Tileset von Mucho Pixels
+prompts.png: Kenney.nl
+title.png Schriftzug: textcraft.net
+heart/*: https://fliflifly.itch.io/hearts-and-health-bar
