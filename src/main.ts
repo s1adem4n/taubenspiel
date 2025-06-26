@@ -11,6 +11,10 @@ import addTouchControls from '@/utils/touch';
 
 const assetBase = '/taubenspiel/assets';
 
+if (window.screen.orientation.type !== 'landscape-primary') {
+  alert('Bitte drehe dein Gerät in den Querformat-Modus.');
+}
+
 k.loadSprite('pigeon', `${assetBase}/pigeon.png`, {
   sliceX: 4,
   sliceY: 1,
