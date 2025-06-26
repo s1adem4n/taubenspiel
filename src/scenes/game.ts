@@ -186,10 +186,14 @@ function spawnHouses(player: GameObj) {
       hit: false,
     },
   ]);
-  target.onDestroy(() => {
-    if (!target.hit) {
-      k.play('hit', { volume: 0.7 });
+  target.onUpdate(() => {
+    if (
+      obj.pos.x + target.pos.x / constants.HOUSE_SCALE < player.pos.x &&
+      !target.hit
+    ) {
       player.hp--;
+      target.hit = true;
+      k.play('hit', { volume: 0.7 });
     }
   });
 }
