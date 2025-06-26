@@ -3,7 +3,7 @@ import kaplay from 'kaplay';
 const k = kaplay({
   width: 320,
   height: 180,
-  scale: 2,
+  scale: 3,
   letterbox: true,
   buttons: {
     jump: {
@@ -13,6 +13,7 @@ const k = kaplay({
       keyboard: ['enter'],
     },
   },
+  maxFPS: 120,
 });
 
 export default k;

@@ -1,12 +1,13 @@
 import k from '@/ctx';
 import { AudioPlay } from 'kaplay';
+import constants from './constants';
 
 class State {
   cancelFirstThrow = false;
   music: AudioPlay | undefined;
-  baseTime = 1;
   timeMultiplier = 1;
-  speed = 60;
+  speed = constants.BASE_SPEED;
+  score = 0;
 
   get gravity() {
     return k.getGravity();
