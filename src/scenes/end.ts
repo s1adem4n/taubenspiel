@@ -25,10 +25,10 @@ export default function end() {
   ]);
 
   k.onButtonPress('jump', () => {
-    k.go('game');
+    k.go('start');
   });
   k.onButtonPress('throw', () => {
     state.cancelFirstThrow = true;
-    k.go('game');
+    k.go('start');
   });
 }
