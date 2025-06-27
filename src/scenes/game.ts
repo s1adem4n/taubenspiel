@@ -252,6 +252,14 @@ export default function game() {
     state.speed += 1 * state.timeMultiplier * k.dt();
   });
 
+  k.add([
+    k.rect(k.width(), 16),
+    k.pos(0, -16),
+    k.area(),
+    k.body({ isStatic: true }),
+    k.color(k.Color.fromHex('#d6d3d1')),
+  ]);
+
   // ground
   k.add([
     'ground',
