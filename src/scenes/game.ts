@@ -249,7 +249,7 @@ export default function game() {
 
   k.onUpdate(() => {
     state.score += 0.1 * state.speed * state.timeMultiplier * k.dt();
-    state.speed += 2 * state.timeMultiplier * k.dt();
+    state.speed += 1 * state.timeMultiplier * k.dt();
   });
 
   // ground
@@ -289,6 +289,7 @@ export default function game() {
   });
 
   player.onUpdate(() => {
+    player.pos.x = 20;
     if (!throwHeld) {
       player.angle = k.lerp(
         player.angle,
